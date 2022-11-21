@@ -36,18 +36,32 @@ def collect_signature():
     return signature
 
 
+# def rec_file(sock):
+#     filename = sock.recv(1024)
+#     f = open(filename.decode('utf-8'), 'w')
+#     data = sock.recv(1024)
+#     while data:
+#         f.write(data.decode('utf-8'))
+#         data = sock.recv(1024)
+#     f.close()
 
 
-sock = make_socket()
-sock.connect((HOST, PORT))
 
-signature = collect_signature()
+if __name__ == '__main__':
 
-while True:
-    print(signature, end = '')
-    message = input()
-    sock.sendall(bytes(signature+message,'utf-8'))
-    data = sock.recv(1024)
-    print(data.decode('utf-8'))
-    
-sock.close()
+    sock = make_socket()
+    sock.connect((HOST, PORT))
+    signature = collect_signature()
+
+    while True:
+
+        # Sending 
+        print(signature, end = '')
+        message = input()
+        sock.sendall(bytes(signature+message,'utf-8'))
+        
+        # Receiving 
+        data = sock.recv(1024)
+        print(data.decode('utf-8'))
+        
+    sock.close()

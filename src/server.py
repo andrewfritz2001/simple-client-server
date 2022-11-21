@@ -48,11 +48,22 @@ def collect_signature():
     signature = name + ": "
     return signature 
 
-def sendfile():
-    print("Enter absolute path to the file: ", end='')
-    path = input()
-    file = open(path, 'r')
-    data = file.read() 
+# def send_file(conn):
+#     conn.sendall(b"sendfile") # sending notification that we're sending a file 
+#     print("Enter relative path to the file: ", end='')
+#     path = input()
+#     filename = path.split('/')
+#     conn.sendall(bytes(filename[-1],'utf-8'))
+
+#     f = open(path, 'r')
+#     data = f.read(1024) 
+#     print(data)
+#     while data:
+#         conn.send(bytes(data,'utf-8'),1024)
+#         data = f.read(1024)
+#     conn.send(b"")
+#     f.close()
+
 
 
 if __name__ == '__main__':
@@ -62,17 +73,16 @@ if __name__ == '__main__':
     signature = collect_signature()
 
     while True:
+        
+        # Receiving 
         data = conn.recv(1024)
         if not data:
             break
         print(data.decode('utf-8'))
+
+        # Sending 
         print(signature, end = '')
         message = input()
-
-        if message == "sendfile":
-            sendfile()
-        else: 
-            conn.sendall(bytes(signature+message,'utf-8'))
-    
+        conn.sendall(bytes(signature+message,'utf-8'))
 
     sock.close()
