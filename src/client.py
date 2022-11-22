@@ -9,7 +9,9 @@
 ## where 127.0.0.1 can be any IP and 4000 can be any port 
 ###################################################################################################
 
+import threading
 import socket
+import select
 import sys
 
 # Server IP and port are arbitrary. Localhost used for convenience
@@ -46,6 +48,21 @@ def collect_signature():
 #     f.close()
 
 
+def send_data(sock):
+    print(signature, end = '')
+    message = input()
+    sock.sendall(bytes(signature+message,'utf-8'))
+    
+def rec_data(sock):
+    while True:
+        rlist, wlist, xlist = select.select([sock],[sock],[])
+        for sock in rlist:
+            data = sock.recv(1024)
+            if not data:
+                raise Exception("We have a problem w client recv")
+            print(data.decode('utf-8'))
+
+
 
 if __name__ == '__main__':
 
@@ -53,15 +70,16 @@ if __name__ == '__main__':
     sock.connect((HOST, PORT))
     signature = collect_signature()
 
+
+    rec_thread = threading.Thread(target=rec_data, args=(sock,))
+    rec_thread.start()
+
     while True:
 
         # Sending 
-        print(signature, end = '')
-        message = input()
-        sock.sendall(bytes(signature+message,'utf-8'))
+        send_data(sock)
         
         # Receiving 
-        data = sock.recv(1024)
-        print(data.decode('utf-8'))
+        # rec_data(sock)
         
     sock.close()
