@@ -9,24 +9,26 @@
 ## where 127.0.0.1 can be any IP and 4000 can be any port 
 ###################################################################################################
 
+import send_file
+import recv_file
 import threading 
 import socket
 import select
+import time
 import sys
 
 # Server IP and port are arbitrary. Localhost used for convenience
 DEFAULT_HOST = "127.0.0.1" 
 DEFAULT_PORT = 65432  
 
-
 def make_socket(host,port):
     """ Constructing our socket object and binding it to the given port on the given host
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
     s.listen()
     return s
-
 
 def get_sock_from_args():
     """ Searches for comand line arguments and returns a socket with the corresponding parameters
@@ -36,7 +38,6 @@ def get_sock_from_args():
     else:
         sock = make_socket(DEFAULT_HOST,DEFAULT_PORT)
     return sock
-
 
 def collect_signature():
     """ Welcome prompt when the server first establishes a connection. 
@@ -50,50 +51,63 @@ def collect_signature():
     signature = name + ": "
     return signature 
 
-# def send_file(conn):
-#     conn.sendall(b"sendfile") # sending notification that we're sending a file 
-#     print("Enter relative path to the file: ", end='')
-#     path = input()
-#     filename = path.split('/')
-#     conn.sendall(bytes(filename[-1],'utf-8'))
+def file_rec():
+    print("recieving file...")
+    time.sleep(0.1)
+    recv_file.start()
+    print("file receieved!")
 
-#     f = open(path, 'r')
-#     data = f.read(1024) 
-#     print(data)
-#     while data:
-#         conn.send(bytes(data,'utf-8'),1024)
-#         data = f.read(1024)
-#     conn.send(b"")
-#     f.close()
+
+def file_send(conn,path):
+    print('sending file...')
+    conn.sendall(bytes("[]","utf-8"))
+    send_file.start(path)
+    print('file sent!')
+    
 
 def rec_data(conn):
+    """ Function to be targeted by async thread to always listen for incoming messages 
+    """
     while True:
         rlist, wlist, xlist = select.select([conn],[conn],[])
         for conn in rlist:
             data = conn.recv(1024)
             if not data:
                 raise Exception("We have a problem w server recv")
-            print(data.decode('utf-8'))
+            if data ==b"[]":
+                file_rec()
+            else:
+                print(data.decode('utf-8'))
 
-def send_data(conn):
-    print(signature, end = '')
-    message = input()
-    conn.sendall(bytes(signature+message,'utf-8'))
+def message_sends_file(message):
+    """ Returns true if a mesage is encased in closed brackets
+    """
+    return True if message[0] == '[' and message[-1] == ']' else False
 
-if __name__ == '__main__':
+def send_data(conn,signature):
+    """ Function to be targeted by main thread and send data
+    """
+    while True:
+        message = input()
+        if message_sends_file(message):
+            path = message[1:-1]
+            file_send(conn,path)
+        else:
+            conn.sendall(bytes(signature+message,'utf-8'))
 
+def start():
+    """ Function to asynchronously send and recieve messages
+    """
     sock = get_sock_from_args()
     conn, addr = sock.accept()
     signature = collect_signature()
-
+    # Recieving 
     rec_thread = threading.Thread(target=rec_data, args=(conn,))
     rec_thread.start()
-    while True:
-        
-        # Recieving 
-        # n/a
-        
-        # Sending 
-        send_data(conn)
+    # Sending
+    send_data(conn,signature)
+    sock.close()    
 
-    sock.close()
+
+if __name__ == '__main__':
+    start()
