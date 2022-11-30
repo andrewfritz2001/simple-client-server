@@ -18,3 +18,7 @@ CptS 455 Washington State University 2022
     * In the second terminal run `python3 client.py`
 * Enter your name, type messages and hit enter to send them 
 * To send a file format your message with braces as follows: `[../relative/path/to/file]`
+
+## Video
+
+* https://www.youtube.com/watch?v=Y3JfFSy1QLA
